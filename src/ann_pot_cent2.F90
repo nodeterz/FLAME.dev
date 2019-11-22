@@ -229,11 +229,11 @@ subroutine get_qat_from_chi_dir_cent2(parini,ann_arr,atoms,a)
     endif
     atoms%qat_1(1:nat)=ann_arr%qq(1:nat)
     atoms%qat_2(1:nat)=ann_arr%qq(nat+1:2*nat)
-    if(parini%iverbose>3) then
+    if(parini%iverbose>=3) then
         write(str_nat,'(I2.2)') nat
-        format_string = '(a8,'//trim(str_nat)//'f7.4)'
-         write(66,trim(format_string)) 'qat_1',atoms%qat_1
-         write(77,trim(format_string)) 'qat_2',atoms%qat_2
+        format_string = '(a8,'//trim(str_nat)//'f10.4)'
+         write(57,trim(format_string)) 'qat_1',atoms%qat_1
+         write(70,trim(format_string)) 'qat_2',atoms%qat_2
     endif
     call charge_analysis_cent2(parini,atoms,ann_arr)
     if(parini%iverbose>1) then
