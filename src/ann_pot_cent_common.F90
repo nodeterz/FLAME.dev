@@ -19,6 +19,10 @@ subroutine cal_force_chi_part1(parini,symfunc,iat,atoms,out_ann,ann_arr)
     ann_arr%chi_i(iat)=out_ann
     tt1=tanh(ann_arr%ann(i)%prefactor_chi*out_ann)
     ann_arr%chi_o(iat)=ann_arr%ann(i)%ampl_chi*tt1+ann_arr%ann(i)%chi0
+    if (trim(ann_arr%approach)=='cent2' ) then 
+        ann_arr%chi_1(iat)=ann_arr%ann(i)%chi1
+        ann_arr%chi_2(iat)=ann_arr%ann(i)%ampl_chi*tt1+ann_arr%ann(i)%chi0
+    end if
     if(trim(ann_arr%event)/='train') then
         tt2=ann_arr%ann(i)%ampl_chi*ann_arr%ann(i)%prefactor_chi*(1.d0-tt1**2)
         do ib=symfunc%linked_lists%prime_bound(iat),symfunc%linked_lists%prime_bound(iat+1)-1
@@ -83,6 +87,8 @@ subroutine cal_force_chi_part2(parini,symfunc,atoms,ann_arr)
                 qnet=atoms%qat(iat)
             elseif(trim(ann_arr%approach)=='centt' .or. trim(ann_arr%approach)=='cent3') then
                 qnet=atoms%zat(iat)+atoms%qat(iat)
+            elseif(trim(ann_arr%approach)=='cent2') then
+                qnet=atoms%qat_1(iat)+atoms%qat_2(iat) !ASK Dr Ghasemi
             else
                 write(*,'(2a)') 'ERROR: unknown approach in ANN, ',trim(ann_arr%approach)
                 stop

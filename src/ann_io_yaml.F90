@@ -94,6 +94,19 @@ subroutine get_symfunc_parameters_yaml(parini,iproc,fname,ann,rcut)
         ann%gausswidth_ion =  subdict_ann//"gausswidth_ion" 
         ann%spring_const   =  subdict_ann//"spring_const"
     endif
+    if(trim(parini%approach_ann)=='cent2') then
+        ann%ampl_chi       =  subdict_ann//"ampl_chi" 
+        ann%prefactor_chi  =  subdict_ann//"prefactor_chi" 
+        ann%ener_ref       =  subdict_ann//"ener_ref" 
+        ann%gausswidth_1     =  subdict_ann//"gausswidth_1" 
+        ann%gausswidth_2     =  subdict_ann//"gausswidth_2" 
+        ann%hardness_1       =  subdict_ann//"hardness_1" 
+        ann%hardness_2       =  subdict_ann//"hardness_2" 
+        ann%chi0           =  subdict_ann//"chi0" 
+        ann%chi1           =  subdict_ann//"chi1" 
+        ann%qinit          =  subdict_ann//"qinit"
+
+    endif
     if(trim(parini%approach_ann)=='tb') then
         ann%ener_ref       =  subdict_ann//"ener_ref" 
     endif
@@ -294,7 +307,8 @@ subroutine write_ann_all_yaml(parini,ann_arr,iter)
             call write_ann_yaml(parini,filename,ann_arr%ann(i),ann_arr%rcut)
         enddo
     elseif(trim(ann_arr%approach)=='atombased' .or. trim(ann_arr%approach)=='eem1' .or. &
-        trim(ann_arr%approach)=='cent1' .or. trim(ann_arr%approach)=='centt' .or. trim(ann_arr%approach)=='cent3') then
+        trim(ann_arr%approach)=='cent1' .or. trim(ann_arr%approach)=='centt' .or. &
+        trim(ann_arr%approach)=='cent2' .or. trim(ann_arr%approach)=='cent3') then
         do i=1,ann_arr%nann
             filename=trim(parini%stypat(i))//trim(fn)
             !write(*,'(a)') trim(filename)
@@ -302,7 +316,7 @@ subroutine write_ann_all_yaml(parini,ann_arr,iter)
             call write_ann_yaml(parini,filename,ann_arr%ann(i),ann_arr%rcut)
         enddo
     else
-        stop 'ERROR: writing ANN parameters is only for cent1,centt,cent3,tb'
+        stop 'ERROR: writing ANN parameters is only for cent1,cent2,centt,cent3,tb'
     endif
 end subroutine write_ann_all_yaml
 !*****************************************************************************************
@@ -349,6 +363,18 @@ subroutine write_ann_yaml(parini,filename,ann,rcut)
         call set(subdict_ann//"zion",ann%zion)
         call set(subdict_ann//"gausswidth_ion",ann%gausswidth_ion)
         call set(subdict_ann//"spring_const",ann%spring_const)
+    endif
+    if(trim(parini%approach_ann)=='cent2') then
+        call set(subdict_ann//"ampl_chi",ann%ampl_chi)
+        call set(subdict_ann//"prefactor_chi",ann%prefactor_chi)
+        call set(subdict_ann//"ener_ref",ann%ener_ref)
+        call set(subdict_ann//"gausswidth_1",ann%gausswidth_1)
+        call set(subdict_ann//"gausswidth_2",ann%gausswidth_2)
+        call set(subdict_ann//"hardness_1",ann%hardness_1)
+        call set(subdict_ann//"hardness_2",ann%hardness_2)
+        call set(subdict_ann//"chi0",ann%chi0)
+        call set(subdict_ann//"chi1",ann%chi1)
+        call set(subdict_ann//"qinit",ann%qinit)
     endif
     if(trim(parini%approach_ann)=='tb') then
         !ann%ener_ref       =  subdict_ann//"ener_ref" 

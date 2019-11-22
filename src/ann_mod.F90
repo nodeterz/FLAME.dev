@@ -30,8 +30,13 @@ module mod_ann
         !real(8):: rc1(350)
         real(8):: gausswidth
         real(8):: gausswidth_ion
+        real(8):: gausswidth_1 ! for cent2
+        real(8):: gausswidth_2 ! for cent2
         real(8):: chi0
+        real(8):: chi1
         real(8):: hardness
+        real(8):: hardness_1 ! for cent2
+        real(8):: hardness_2 ! for cent2
         real(8):: spring_const
         real(8):: zion
         real(8):: qinit
@@ -101,6 +106,23 @@ module mod_ann
         real(8):: chi_max(10)
         real(8):: chi_min(10)
         real(8):: chi_sum(10)
+        !********************************
+        real(8):: q_1_max(10)       ! for cent2
+        real(8):: q_2_max(10)       ! for cent2
+        real(8):: q_1_min(10)       ! for cent2
+        real(8):: q_2_min(10)       ! for cent2
+        real(8):: q_1_sum(10)       ! for cent2
+        real(8):: q_2_sum(10)       ! for cent2
+        real(8):: chi_1_max(10)     ! for cent2
+        real(8):: chi_2_max(10)     ! for cent2
+        real(8):: chi_1_min(10)     ! for cent2
+        real(8):: chi_2_min(10)     ! for cent2
+        real(8):: chi_1_sum(10)     ! for cent2
+        real(8):: chi_2_sum(10)     ! for cent2
+        real(8):: chi_1_delta(10)   ! for cent2
+        real(8):: chi_2_delta(10)   ! for cent2
+
+        !********************************
         real(8):: chi_delta(10)
         real(8):: yall_bond(100,100,100)
         real(8):: y0d_bond(100,3,100,100)
@@ -110,6 +132,8 @@ module mod_ann
         real(8), allocatable:: a(:)
         real(8), allocatable:: chi_i(:)
         real(8), allocatable:: chi_o(:)
+        real(8), allocatable:: chi_1(:) ! for cent2
+        real(8), allocatable:: chi_2(:) ! for cent2
         real(8), allocatable:: chi_d(:)
         real(8), allocatable:: fat_chi(:,:)
         real(8), allocatable:: dqat_weights(:,:)
@@ -208,11 +232,15 @@ subroutine ann_arr_allocate(ann_arr)
     allocate(ann_arr%fat_chi(1:3,1:ann_arr%natmax))
     allocate(ann_arr%chi_i(1:ann_arr%natmax))
     allocate(ann_arr%chi_o(1:ann_arr%natmax))
+    allocate(ann_arr%chi_1(1:ann_arr%natmax))
+    allocate(ann_arr%chi_2(1:ann_arr%natmax))
     allocate(ann_arr%chi_d(1:ann_arr%natmax))
     allocate(ann_arr%a(1:(ann_arr%natmax+1)*(ann_arr%natmax+1)))
     ann_arr%fat_chi=0.d0
     ann_arr%chi_i=0.d0
     ann_arr%chi_o=0.d0
+    ann_arr%chi_1=0.d0
+    ann_arr%chi_2=0.d0
     ann_arr%chi_d=0.d0
     ann_arr%a=0.d0
     allocate(ann_arr%dqat_weights(ann_arr%nweight_max,ann_arr%natmax))
@@ -238,6 +266,8 @@ subroutine ann_arr_deallocate(ann_arr)
     !if(istat/=0) stop 'ERROR: unable to deallocate array ann_arr%y0dr.'
     deallocate(ann_arr%chi_i)
     deallocate(ann_arr%chi_o)
+    deallocate(ann_arr%chi_1)
+    deallocate(ann_arr%chi_2)
     deallocate(ann_arr%chi_d)
     deallocate(ann_arr%a)
     deallocate(ann_arr%fat_chi)

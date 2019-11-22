@@ -136,6 +136,10 @@ subroutine ekf_rivals(parini,ann_arr,opt_ann)
         r0=10.d0
         alpha=100.d-2
         rf=1.d-6
+    elseif(trim(parini%approach_ann)=='cent2') then
+        r0=10.d0
+        alpha=100.d-2
+        rf=1.d-6
     elseif(trim(parini%approach_ann)=='tb') then
         r0=100.d0
         alpha=100.d-2
@@ -255,15 +259,37 @@ subroutine analyze_epoch_init(parini,ann_arr)
     type(typ_ann_arr), intent(inout):: ann_arr
     !local variables
     if(.not. (trim(ann_arr%approach)=='eem1' .or. trim(parini%approach_ann)=='cent1' &
-        .or. trim(ann_arr%approach)=='centt' .or. trim(ann_arr%approach)=='cent3')) return
-    ann_arr%natsum(1:10)=0
-    ann_arr%qmin(1:10)=huge(1.d0)
-    ann_arr%qmax(1:10)=-huge(1.d0)
-    ann_arr%qsum(1:10)=0.d0
-    ann_arr%chi_min(1:10)=huge(1.d0)
-    ann_arr%chi_max(1:10)=-huge(1.d0)
-    ann_arr%chi_sum(1:10)=0.d0
-    ann_arr%chi_delta(1:10)=0.d0
+        .or. trim(ann_arr%approach)=='centt' .or. trim(ann_arr%approach)=='cent3' .or.&
+        trim(ann_arr%approach)=='cent2')) return
+
+    if((trim(ann_arr%approach)=='eem1' .or. trim(parini%approach_ann)=='cent1' &
+        .or. trim(ann_arr%approach)=='centt' .or. trim(ann_arr%approach)=='cent3')) then
+        ann_arr%natsum(1:10)=0
+        ann_arr%qmin(1:10)=huge(1.d0)
+        ann_arr%qmax(1:10)=-huge(1.d0)
+        ann_arr%qsum(1:10)=0.d0
+        ann_arr%chi_min(1:10)=huge(1.d0)
+        ann_arr%chi_max(1:10)=-huge(1.d0)
+        ann_arr%chi_sum(1:10)=0.d0
+        ann_arr%chi_delta(1:10)=0.d0
+    end if
+    if((trim(ann_arr%approach)=='cent2')) then
+        ann_arr%natsum(1:10)=0
+        ann_arr%q_1_min(1:10)=huge(1.d0)
+        ann_arr%q_2_min(1:10)=huge(1.d0)
+        ann_arr%q_1_max(1:10)=-huge(1.d0)
+        ann_arr%q_2_max(1:10)=-huge(1.d0)
+        ann_arr%q_1_sum(1:10)=0.d0
+        ann_arr%q_2_sum(1:10)=0.d0
+        ann_arr%chi_1_min(1:10)=huge(1.d0)
+        ann_arr%chi_2_min(1:10)=huge(1.d0)
+        ann_arr%chi_1_max(1:10)=-huge(1.d0)
+        ann_arr%chi_2_max(1:10)=-huge(1.d0)
+        ann_arr%chi_1_sum(1:10)=0.d0
+        ann_arr%chi_2_sum(1:10)=0.d0
+        ann_arr%chi_1_delta(1:10)=0.d0
+        ann_arr%chi_2_delta(1:10)=0.d0
+    end if 
 end subroutine analyze_epoch_init
 !*****************************************************************************************
 subroutine analyze_epoch_print(parini,iter,ann_arr)
@@ -277,68 +303,84 @@ subroutine analyze_epoch_print(parini,iter,ann_arr)
     !local variables
     integer:: i, ios
     real(8):: ttavg, ttmin, ttmax, ssavg, ssmin, ssmax
+    real(8):: ttavg_1, ttmin_1, ttmax_1, ssavg_1, ssmin_1, ssmax_1
+    real(8):: ttavg_2, ttmin_2, ttmax_2, ssavg_2, ssmin_2, ssmax_2
     character(50):: fn_charge, fn_chi
     character(20):: str_key
     if(.not. (trim(ann_arr%approach)=='eem1' .or. trim(parini%approach_ann)=='cent1' &
-        .or. trim(ann_arr%approach)=='centt' .or. trim(ann_arr%approach)=='cent3')) return
-    do i=1,parini%ntypat
-        !fn_charge='charge.'//trim(parini%stypat(i))
-        !fn_chi='chi.'//trim(parini%stypat(i))
-        !if(iter==0) then
-        !    open(unit=61,file=trim(fn_charge),status='replace',iostat=ios)
-        !    if(ios/=0) then
-        !        write(*,'(2a)') 'ERROR: failure openning ',trim(fn_charge)
-        !        stop
-        !    endif
-        !    open(unit=71,file=trim(fn_chi),status='replace',iostat=ios)
-        !    if(ios/=0) then
-        !        write(*,'(2a)') 'ERROR: failure openning ',trim(fn_chi)
-        !        stop
-        !    endif
-        !else
-        !    open(unit=61,file=trim(fn_charge),status='old',position='append',iostat=ios)
-        !    if(ios/=0) then
-        !        write(*,'(2a)') 'ERROR: failure openning ',trim(fn_charge)
-        !        stop
-        !    endif
-        !    open(unit=71,file=trim(fn_chi),status='old',position='append',iostat=ios)
-        !    if(ios/=0) then
-        !        write(*,'(2a)') 'ERROR: failure openning ',trim(fn_chi)
-        !        stop
-        !    endif
-        !endif
-        ttavg=ann_arr%qsum(i)/real(ann_arr%natsum(i),8)
-        ttmin=ann_arr%qmin(i)
-        ttmax=ann_arr%qmax(i)
-        !write(61,'(i6,4f8.3)') iter,ttavg,ttmin,ttmax,ttmax-ttmin
-        
-        write(str_key,'(2a)') 'charge_',trim(parini%stypat(i))
-        call yaml_mapping_open(trim(str_key),flow=.true.,unit=ann_arr%iunit)
-        call yaml_map('iter',iter,unit=ann_arr%iunit)
-        call yaml_map('qavg',ttavg,fmt='(f8.3)',unit=ann_arr%iunit)
-        call yaml_map('qmin',ttmin,fmt='(f8.3)',unit=ann_arr%iunit)
-        call yaml_map('qmax',ttmax,fmt='(f8.3)',unit=ann_arr%iunit)
-        call yaml_map('qvar',ttmax-ttmin,fmt='(f8.3)',unit=ann_arr%iunit)
-        call yaml_mapping_close(unit=ann_arr%iunit)
+        .or. trim(ann_arr%approach)=='centt' .or. trim(ann_arr%approach)=='cent3'    &
+        .or. trim(ann_arr%approach)=='cent2')) return
+    if((trim(ann_arr%approach)=='eem1' .or. trim(parini%approach_ann)=='cent1' &
+      .or. trim(ann_arr%approach)=='centt' .or. trim(ann_arr%approach)=='cent3')) then
+        do i=1,parini%ntypat
+            ttavg=ann_arr%qsum(i)/real(ann_arr%natsum(i),8)
+            ttmin=ann_arr%qmin(i)
+            ttmax=ann_arr%qmax(i)
+            
+            write(str_key,'(2a)') 'charge_',trim(parini%stypat(i))
+            call yaml_mapping_open(trim(str_key),flow=.true.,unit=ann_arr%iunit)
+            call yaml_map('iter',iter,unit=ann_arr%iunit)
+            call yaml_map('qavg',ttavg,fmt='(f8.3)',unit=ann_arr%iunit)
+            call yaml_map('qmin',ttmin,fmt='(f8.3)',unit=ann_arr%iunit)
+            call yaml_map('qmax',ttmax,fmt='(f8.3)',unit=ann_arr%iunit)
+            call yaml_map('qvar',ttmax-ttmin,fmt='(f8.3)',unit=ann_arr%iunit)
+            call yaml_mapping_close(unit=ann_arr%iunit)
 
-        !write(61,'(i6,4es14.5)') iter,ttavg,ttmin,ttmax,ttmax-ttmin
-        ssavg=ann_arr%chi_sum(i)/real(ann_arr%natsum(i),8)
-        ssmin=ann_arr%chi_min(i)
-        ssmax=ann_arr%chi_max(i)
-        !write(71,'(i6,5f8.3)') iter,ssavg,ssmin,ssmax,ssmax-ssmin,ann_arr%chi_delta(i)
-        write(str_key,'(2a)') 'chi_',trim(parini%stypat(i))
-        call yaml_mapping_open(trim(str_key),flow=.true.,unit=ann_arr%iunit)
-        call yaml_map('iter',iter,unit=ann_arr%iunit)
-        call yaml_map('chiavg',ssavg,fmt='(f8.3)',unit=ann_arr%iunit)
-        call yaml_map('chimin',ssmin,fmt='(f8.3)',unit=ann_arr%iunit)
-        call yaml_map('chimax',ssmax,fmt='(f8.3)',unit=ann_arr%iunit)
-        call yaml_map('chivar',ssmax-ssmin,fmt='(f8.3)',unit=ann_arr%iunit)
-        call yaml_mapping_close(unit=ann_arr%iunit)
-        !write(71,'(i6,4es14.5)') iter,ssavg,ssmin,ssmax,ssmax-ssmin
-        !if (trim(parini%stypat(i))=='O' .and. ssmax-ssmin> 0.01) stop
-        !close(61)
-        !close(71)
-    enddo
+            ssavg=ann_arr%chi_sum(i)/real(ann_arr%natsum(i),8)
+            ssmin=ann_arr%chi_min(i)
+            ssmax=ann_arr%chi_max(i)
+            write(str_key,'(2a)') 'chi_',trim(parini%stypat(i))
+            call yaml_mapping_open(trim(str_key),flow=.true.,unit=ann_arr%iunit)
+            call yaml_map('iter',iter,unit=ann_arr%iunit)
+            call yaml_map('chiavg',ssavg,fmt='(f8.3)',unit=ann_arr%iunit)
+            call yaml_map('chimin',ssmin,fmt='(f8.3)',unit=ann_arr%iunit)
+            call yaml_map('chimax',ssmax,fmt='(f8.3)',unit=ann_arr%iunit)
+            call yaml_map('chivar',ssmax-ssmin,fmt='(f8.3)',unit=ann_arr%iunit)
+            call yaml_mapping_close(unit=ann_arr%iunit)
+        enddo
+    end if
+    if(trim(ann_arr%approach)=='cent2') then
+        do i=1,parini%ntypat
+            ttavg_1=ann_arr%q_1_sum(i)/real(ann_arr%natsum(i),8)
+            ttavg_2=ann_arr%q_2_sum(i)/real(ann_arr%natsum(i),8)
+            ttmin_1=ann_arr%q_1_min(i)
+            ttmin_2=ann_arr%q_2_min(i)
+            ttmax_1=ann_arr%q_1_max(i)
+            ttmax_2=ann_arr%q_2_max(i)
+            
+            write(str_key,'(2a)') 'charge_',trim(parini%stypat(i))
+            call yaml_mapping_open(trim(str_key),flow=.true.,unit=ann_arr%iunit)
+            call yaml_map('iter',iter,unit=ann_arr%iunit)
+            call yaml_map('q_1_avg',ttavg_1,fmt='(f8.3)',unit=ann_arr%iunit)
+            call yaml_map('q_1_min',ttmin_1,fmt='(f8.3)',unit=ann_arr%iunit)
+            call yaml_map('q_1_max',ttmax_1,fmt='(f8.3)',unit=ann_arr%iunit)
+            call yaml_map('q_1_var',ttmax_1-ttmin_1,fmt='(f8.3)',unit=ann_arr%iunit)
+            call yaml_map('q_2_avg',ttavg_2,fmt='(f8.3)',unit=ann_arr%iunit)
+            call yaml_map('q_2_min',ttmin_2,fmt='(f8.3)',unit=ann_arr%iunit)
+            call yaml_map('q_2_max',ttmax_2,fmt='(f8.3)',unit=ann_arr%iunit)
+            call yaml_map('q_2_var',ttmax_2-ttmin_2,fmt='(f8.3)',unit=ann_arr%iunit)
+            call yaml_mapping_close(unit=ann_arr%iunit)
+
+            ssavg_1=ann_arr%chi_1_sum(i)/real(ann_arr%natsum(i),8)
+            ssavg_2=ann_arr%chi_2_sum(i)/real(ann_arr%natsum(i),8)
+            ssmin_1=ann_arr%chi_1_min(i)
+            ssmin_2=ann_arr%chi_2_min(i)
+            ssmax_1=ann_arr%chi_1_max(i)
+            ssmax_2=ann_arr%chi_2_max(i)
+            write(str_key,'(2a)') 'chi_',trim(parini%stypat(i))
+            call yaml_mapping_open(trim(str_key),flow=.true.,unit=ann_arr%iunit)
+            call yaml_map('iter',iter,unit=ann_arr%iunit)
+            call yaml_map('chi_1_avg',ssavg_1,fmt='(f8.3)',unit=ann_arr%iunit)
+            call yaml_map('chi_1_min',ssmin_1,fmt='(f8.3)',unit=ann_arr%iunit)
+            call yaml_map('chi_1_max',ssmax_1,fmt='(f8.3)',unit=ann_arr%iunit)
+            call yaml_map('chi_1_var',ssmax_1-ssmin_1,fmt='(f8.3)',unit=ann_arr%iunit)
+            call yaml_map('chi_2_avg',ssavg_2,fmt='(f8.3)',unit=ann_arr%iunit)
+            call yaml_map('chi_2_min',ssmin_2,fmt='(f8.3)',unit=ann_arr%iunit)
+            call yaml_map('chi_2_max',ssmax_2,fmt='(f8.3)',unit=ann_arr%iunit)
+            call yaml_map('chi_2_var',ssmax_2-ssmin_2,fmt='(f8.3)',unit=ann_arr%iunit)
+            call yaml_mapping_close(unit=ann_arr%iunit)
+        enddo
+    end if
 end subroutine analyze_epoch_print
 !*****************************************************************************************
 subroutine ekf_behler(parini,ann_arr,opt_ann)

@@ -37,7 +37,7 @@ subroutine read_yaml_conf(parini,filename,nconfmax,atoms_arr)
     character, dimension(:), allocatable :: fbuf
     integer(kind = 8) :: cbuf, cbuf_len
     if(nconfmax<1) then
-        write(*,'(a)') 'ERROR: why do you call acf_read_new with nconfmax<1 ?'
+        write(*,'(a)') 'ERROR: why do you call read_yaml_conf with nconfmax<1 ?'
         stop
     endif
     fn_tmp=adjustl(trim(filename))

@@ -23,6 +23,8 @@ subroutine get_fcn_ann(parini,idp,str_dataset,ann_arr,opt_ann,fcn_ann,fcn_ref)
         iconf=idp
     elseif(trim(ann_arr%approach)=='cent1') then
         iconf=idp
+    elseif(trim(ann_arr%approach)=='cent2') then
+        iconf=idp
     elseif(trim(ann_arr%approach)=='centt') then
         iconf=idp
     elseif(trim(ann_arr%approach)=='cent3') then
@@ -49,6 +51,14 @@ subroutine get_fcn_ann(parini,idp,str_dataset,ann_arr,opt_ann,fcn_ann,fcn_ref)
             i=atoms%itypat(iat)
             do j=1,ann_arr%nweight_max
                 ann_grad(j,i)=ann_grad(j,i)+atoms%qat(iat)*ann_arr%g_per_atom(j,iat)
+            enddo
+        enddo
+        call set_opt_ann_grad(ann_arr,ann_grad,opt_ann)
+    elseif(trim(ann_arr%approach)=='cent2') then
+        do iat=1,atoms%nat
+            i=atoms%itypat(iat)
+            do j=1,ann_arr%nweight_max
+                ann_grad(j,i)=ann_grad(j,i)+(atoms%qat_2(iat))*ann_arr%g_per_atom(j,iat) ! ASK Dr Ghasemi
             enddo
         enddo
         call set_opt_ann_grad(ann_arr,ann_grad,opt_ann)
@@ -105,6 +115,8 @@ subroutine cal_ann_main(parini,atoms,symfunc,ann_arr,opt_ann)
         call cal_ann_atombased(parini,atoms,symfunc,ann_arr)
     elseif(trim(ann_arr%approach)=='eem1' .or. trim(ann_arr%approach)=='cent1') then
         call cal_ann_cent1(parini,atoms,symfunc,ann_arr)
+    elseif(trim(ann_arr%approach)=='cent2') then
+        call cal_ann_cent2(parini,atoms,symfunc,ann_arr)
     elseif(trim(ann_arr%approach)=='centt') then
         call cal_ann_centt(parini,atoms,symfunc,ann_arr)
     elseif(trim(ann_arr%approach)=='cent3') then
@@ -256,6 +268,8 @@ subroutine prefit_cent(parini,ann_arr,symfunc_train,symfunc_valid,atoms_train,at
                     qnet=atoms%qat(iat)
                 elseif(trim(ann_arr%approach)=='centt') then
                     qnet=atoms%zat(iat)+atoms%qat(iat)
+                elseif(trim(ann_arr%approach)=='cent2') then
+                    qnet=atoms%qat_1(iat)+atoms%qat_2(iat)
                 else
                     write(*,'(2a)') 'ERROR: unknown approach in ANN, ',trim(ann_arr%approach)
                     stop
