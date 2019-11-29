@@ -18,10 +18,11 @@ subroutine cal_force_chi_part1(parini,symfunc,iat,atoms,out_ann,ann_arr)
     i=atoms%itypat(iat)
     ann_arr%chi_i(iat)=out_ann
     tt1=tanh(ann_arr%ann(i)%prefactor_chi*out_ann)
-    ann_arr%chi_o(iat)=ann_arr%ann(i)%ampl_chi*tt1+ann_arr%ann(i)%chi0
     if (trim(ann_arr%approach)=='cent2' ) then 
         ann_arr%chi_1(iat)=ann_arr%ann(i)%chi1
         ann_arr%chi_2(iat)=ann_arr%ann(i)%ampl_chi*tt1+ann_arr%ann(i)%chi0
+    else
+        ann_arr%chi_o(iat)=ann_arr%ann(i)%ampl_chi*tt1+ann_arr%ann(i)%chi0
     end if
     if(trim(ann_arr%event)/='train') then
         tt2=ann_arr%ann(i)%ampl_chi*ann_arr%ann(i)%prefactor_chi*(1.d0-tt1**2)

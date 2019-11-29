@@ -341,17 +341,22 @@ subroutine atom_allocate(atoms,nat,natim,nfp)
     if(ind_all>0 .or. ind>0) then
         if(allocated(atoms%qat)) stop 'ERROR: qat is already allocated'
         atoms%qat=f_malloc0([1.to.nat],id='atoms%qat')
-    endif
-    ind=index(atoms%alloclist,'qat_1')
-    if(ind_all>0 .or. ind>0) then
         if(allocated(atoms%qat_1)) stop 'ERROR: qat_1 is already allocated'
         atoms%qat_1=f_malloc0([1.to.nat],id='atoms%qat_1')
-    endif
-    ind=index(atoms%alloclist,'qat_2')
-    if(ind_all>0 .or. ind>0) then
         if(allocated(atoms%qat_2)) stop 'ERROR: qat_2 is already allocated'
         atoms%qat_2=f_malloc0([1.to.nat],id='atoms%qat_2')
     endif
+    ! TO BE CORRECTED : CHECK WHERE ATOM ALLOCATE is called
+    !ind=index(atoms%alloclist,'qat_1')
+    !if(ind_all>0 .or. ind>0) then
+    !    if(allocated(atoms%qat_1)) stop 'ERROR: qat_1 is already allocated'
+    !    atoms%qat_1=f_malloc0([1.to.nat],id='atoms%qat_1')
+    !endif
+    !ind=index(atoms%alloclist,'qat_2')
+    !if(ind_all>0 .or. ind>0) then
+    !    if(allocated(atoms%qat_2)) stop 'ERROR: qat_2 is already allocated'
+    !    atoms%qat_2=f_malloc0([1.to.nat],id='atoms%qat_2')
+    !endif
     ind=index(atoms%alloclist,'zat')
     if(ind_all>0 .or. ind>0) then
         if(allocated(atoms%zat)) stop 'ERROR: zat is already allocated'
@@ -460,23 +465,34 @@ subroutine atom_deallocate(atoms)
         else
             call f_free(atoms%qat)
         endif
-    endif
-    ind=index(atoms%alloclist,'qat_1')
-    if((ind_all>0 .and. allocated(atoms%qat_1)) .or. ind>0) then
         if(.not. allocated(atoms%qat_1)) then
             stop 'ERROR: qat_1 is not allocated'
         else
             call f_free(atoms%qat_1)
         endif
-    endif
-    ind=index(atoms%alloclist,'qat_2')
-    if((ind_all>0 .and. allocated(atoms%qat_2)) .or. ind>0) then
         if(.not. allocated(atoms%qat_2)) then
             stop 'ERROR: qat_2 is not allocated'
         else
             call f_free(atoms%qat_2)
         endif
     endif
+    ! TO BE CORRECTED : CHECK WHERE ATOM DEALLOCATE is called
+    !ind=index(atoms%alloclist,'qat_1')
+    !if((ind_all>0 .and. allocated(atoms%qat_1)) .or. ind>0) then
+    !    if(.not. allocated(atoms%qat_1)) then
+    !        stop 'ERROR: qat_1 is not allocated'
+    !    else
+    !        call f_free(atoms%qat_1)
+    !    endif
+    !endif
+    !ind=index(atoms%alloclist,'qat_2')
+    !if((ind_all>0 .and. allocated(atoms%qat_2)) .or. ind>0) then
+    !    if(.not. allocated(atoms%qat_2)) then
+    !        stop 'ERROR: qat_2 is not allocated'
+    !    else
+    !        call f_free(atoms%qat_2)
+    !    endif
+    !endif
     ind=index(atoms%alloclist,'zat')
     if((ind_all>0 .and. allocated(atoms%zat)) .or. ind>0) then
         if(.not. allocated(atoms%zat)) then
@@ -562,6 +578,14 @@ subroutine atom_allocate_old(atoms,nat,natim,nfp,sat,vat,amass,fat,bemoved,qat,z
         allocate(atoms%qat_1(atoms%nat),source=0.d0)
         allocate(atoms%qat_2(atoms%nat),source=0.d0)
     endif
+    !if((all_of_them .and. .not. allocated(atoms%qat_1)) .or. (present(qat_1) .and. qat_1)) then
+    !    if(allocated(atoms%qat_1)) stop 'ERROR: qat_1 is already allocated'
+    !    allocate(atoms%qat_1(atoms%nat),source=0.d0)
+    !endif
+    !if((all_of_them .and. .not. allocated(atoms%qat_2)) .or. (present(qat_2) .and. qat_2)) then
+    !    if(allocated(atoms%qat_2)) stop 'ERROR: qat_2 is already allocated'
+    !    allocate(atoms%qat_2(atoms%nat),source=0.d0)
+    !endif
     if((all_of_them .and. .not. allocated(atoms%zat)) .or. (present(zat) .and. zat)) then
         if(allocated(atoms%zat)) stop 'ERROR: zat is already allocated'
         allocate(atoms%zat(atoms%nat),source=0.d0)
@@ -674,21 +698,23 @@ subroutine atom_deallocate_old(atoms,sat,rat,ratim,vat,amass,fat,bemoved,qat,zat
             endif
         else
             deallocate(atoms%qat)
-        endif
-        if(.not. allocated(atoms%qat_1)) then
-            if(.not. all_of_them) then
-                stop 'ERROR: qat_1 is not allocated'
-            endif
-        else
             deallocate(atoms%qat_1)
-        endif
-        if(.not. allocated(atoms%qat_2)) then
-            if(.not. all_of_them) then
-                stop 'ERROR: qat_2 is not allocated'
-            endif
-        else
             deallocate(atoms%qat_2)
         endif
+        !if(.not. allocated(atoms%qat_1)) then
+        !    if(.not. all_of_them) then
+        !        stop 'ERROR: qat_1 is not allocated'
+        !    endif
+        !else
+        !    deallocate(atoms%qat_1)
+        !endif
+        !if(.not. allocated(atoms%qat_2)) then
+        !    if(.not. all_of_them) then
+        !        stop 'ERROR: qat_2 is not allocated'
+        !    endif
+        !else
+        !    deallocate(atoms%qat_2)
+        !endif
     endif
     if(all_of_them .or. (present(zat) .and. zat)) then
         if(.not. allocated(atoms%zat)) then
@@ -1006,15 +1032,54 @@ subroutine atom_copy(at_inp,at_out,str_message)
             endif
             if(.not. allocated(at_out%qat)) then
                 at_out%qat=f_malloc([1.to.at_out%nat],id='at_out%qat')
+                at_out%qat_1=f_malloc([1.to.at_out%nat],id='at_out%qat_1')
+                at_out%qat_2=f_malloc([1.to.at_out%nat],id='at_out%qat_2')
             endif
             do iat=1,at_inp%nat
                 at_out%qat(iat)=at_inp%qat(iat)
+                at_out%qat_1(iat)=at_inp%qat_1(iat)
+                at_out%qat_2(iat)=at_inp%qat_2(iat)
             enddo
         else
             err_mess='ERROR: qat in at_inp%alloclist but at_inp%qat not allocated:'
             write(*,'(a,1x,a)') trim(err_mess),trim(str_message)
             stop
         endif
+        !##################################################################################################
+        !if(allocated(at_inp%qat_1)) then
+        !    ishape(1:1)=shape(at_out%qat_1)
+        !    if(allocated(at_out%qat_1) .and. at_inp%nat/=ishape(1)) then
+        !        call f_free(at_out%qat_1)
+        !    endif
+        !    if(.not. allocated(at_out%qat_1)) then
+        !        at_out%qat_1=f_malloc([1.to.at_out%nat],id='at_out%qat_1')
+        !    endif
+        !    do iat=1,at_inp%nat
+        !        at_out%qat_1(iat)=at_inp%qat_1(iat)
+        !    enddo
+        !else
+        !    err_mess='ERROR: qat_1 in at_inp%alloclist but at_inp%qat_1 not allocated:'
+        !    write(*,'(a,1x,a)') trim(err_mess),trim(str_message)
+        !    stop
+        !endif
+
+        !if(allocated(at_inp%qat_2)) then
+        !    ishape(1:1)=shape(at_out%qat_2)
+        !    if(allocated(at_out%qat_2) .and. at_inp%nat/=ishape(1)) then
+        !        call f_free(at_out%qat_2)
+        !    endif
+        !    if(.not. allocated(at_out%qat_2)) then
+        !        at_out%qat_2=f_malloc([1.to.at_out%nat],id='at_out%qat_2')
+        !    endif
+        !    do iat=1,at_inp%nat
+        !        at_out%qat_2(iat)=at_inp%qat_2(iat)
+        !    enddo
+        !else
+        !    err_mess='ERROR: qat_2 in at_inp%alloclist but at_inp%qat_2 not allocated:'
+        !    write(*,'(a,1x,a)') trim(err_mess),trim(str_message)
+        !    stop
+        !endif
+        !####################################################################################################3333
     endif
     !copying array at_inp%zat to at_out%zat
     ind=index(at_inp%alloclist,'zat')
@@ -1367,6 +1432,8 @@ subroutine atom_copy_old(at_inp,at_out,str_message,sat,rat,ratim,vat,amass,fat,b
             endif
             do iat=1,at_inp%nat
                 at_out%qat(iat)=at_inp%qat(iat)
+                at_out%qat_1(iat)=at_inp%qat_1(iat)
+                at_out%qat_2(iat)=at_inp%qat_2(iat)
             enddo
         endif
     else

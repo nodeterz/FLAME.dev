@@ -508,10 +508,11 @@ subroutine read_ann_yaml(parini,ann_arr)
             filename=trim(parini%stypat(1))//fn_tt//trim(fn)
             write(*,'(a)') trim(filename)
         elseif(trim(ann_arr%approach)=='eem1' .or. trim(ann_arr%approach)=='cent1' .or. &
-            trim(ann_arr%approach)=='centt' .or. trim(ann_arr%approach)=='cent3' .or. trim(ann_arr%approach)=='atombased') then
+            trim(ann_arr%approach)=='centt' .or. trim(ann_arr%approach)=='cent3' .or. &
+            trim(ann_arr%approach)=='cent2' .or. trim(ann_arr%approach)=='atombased') then
             filename=trim(parini%stypat(iann))//trim(fn)
         else
-            stop 'ERROR: reading ANN parameters is only for cent1,centt,cent3,tb'
+            stop 'ERROR: reading ANN parameters is only for cent1,cent2,centt,cent3,tb'
         endif
         !-------------------------------------------------------
         call get_symfunc_parameters_yaml(parini,iproc,filename,ann_arr%ann(iann),rcut)
