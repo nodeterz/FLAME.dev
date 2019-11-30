@@ -281,6 +281,9 @@ subroutine analyze_epoch_init(parini,ann_arr)
         ann_arr%q_2_max(1:10)=-huge(1.d0)
         ann_arr%q_1_sum(1:10)=0.d0
         ann_arr%q_2_sum(1:10)=0.d0
+        ann_arr%qmin(1:10)=huge(1.d0)
+        ann_arr%qmax(1:10)=-huge(1.d0)
+        ann_arr%qsum(1:10)=0.d0
         ann_arr%chi_1_min(1:10)=huge(1.d0)
         ann_arr%chi_2_min(1:10)=huge(1.d0)
         ann_arr%chi_1_max(1:10)=-huge(1.d0)
