@@ -496,7 +496,7 @@ subroutine charge_analysis_cent2(parini,atoms,ann_arr)
     type(typ_ann_arr), intent(inout):: ann_arr
     !local variables
     integer:: iat, i 
-    real(8):: q_1, q_2, c_1, c_2 
+    real(8):: q_1, q_2, c_1, c_2, q 
     real(8):: chi_1_min_per_conf(10), chi_1_max_per_conf(10)
     real(8):: chi_2_min_per_conf(10), chi_2_max_per_conf(10)
     chi_1_min_per_conf(1:10)= 1.d20
@@ -504,6 +504,7 @@ subroutine charge_analysis_cent2(parini,atoms,ann_arr)
     chi_2_min_per_conf(1:10)= 1.d20
     chi_2_max_per_conf(1:10)=-1.d20
     do iat=1,atoms%nat
+        q=atoms%qat_1(iat)+atoms%qat_2(iat)
         q_1=atoms%qat_1(iat)
         q_2=atoms%qat_2(iat)
         c_1=ann_arr%chi_1(iat)
@@ -517,6 +518,9 @@ subroutine charge_analysis_cent2(parini,atoms,ann_arr)
         ann_arr%q_2_min(i)=min(q_2,ann_arr%q_2_min(i))
         ann_arr%q_2_max(i)=max(q_2,ann_arr%q_2_max(i))
         ann_arr%q_2_sum(i)=ann_arr%q_2_sum(i)+q_2
+        ann_arr%qmin(i)=min(q,ann_arr%qmin(i))
+        ann_arr%qmax(i)=max(q,ann_arr%qmax(i))
+        ann_arr%qsum(i)=ann_arr%qsum(i)+q
 
         ann_arr%chi_1_min(i)=min(c_1,ann_arr%chi_1_min(i))
         ann_arr%chi_1_max(i)=max(c_1,ann_arr%chi_1_max(i))
