@@ -1,7 +1,7 @@
 !*****************************************************************************************
 subroutine cal_ann_cent1(parini,atoms,symfunc,ann_arr)
     use mod_parini, only: typ_parini
-    use mod_atoms, only: typ_atoms
+    use mod_atoms, only: typ_atoms, update_ratp
     use mod_ann, only: typ_ann_arr, convert_ann_epotd
     use mod_symfunc, only: typ_symfunc
     use mod_electrostatics, only: typ_poisson
@@ -20,6 +20,10 @@ subroutine cal_ann_cent1(parini,atoms,symfunc,ann_arr)
     real(8):: epot_c, out_ann
     real(8):: time1, time2, time3, time4, time5, time6, time7, time8
     real(8):: tt1, tt2, tt3, fx_es, fy_es, fz_es, hinv(3,3), vol
+    real(8):: dipole(3) 
+    real(8):: cte=0.529177210d0
+    real(8):: cte_2=1.d0/0.529177210d0
+    character(6) :: filename
     call f_routine(id='cal_ann_cent1')
     if(.not. (trim(parini%task)=='ann' .and. trim(parini%subtask_ann)=='train')) then
         allocate(ann_arr%fat_chi(1:3,1:atoms%nat))
@@ -77,6 +81,30 @@ subroutine cal_ann_cent1(parini,atoms,symfunc,ann_arr)
     if(parini%iverbose>=2) call cpu_time(time4)
     call get_qat_from_chi_cent1(parini,ann_arr,atoms,poisson,ann_arr%a)
     if(parini%iverbose>=2) call cpu_time(time5)
+    !--------------------------------------------------------------------------
+    if(parini%iverbose>=2 .and. trim(ann_arr%event)=='evalu') then
+        write(filename,'(a4,I2.2)')'dpm_',ann_arr%istep_opt_ann
+        open(unit=7820,file=trim(filename),access='append')
+        !write(*,*) ann_arr%istep_opt_ann,atoms%ratp(1,1)
+        dipole(1)=0.d0 ; dipole(2)=0.d0 ; dipole(3)=0.d0
+        call update_ratp(atoms)
+        write(7820,*) 'conf:'
+        write(7820,*)'nat: ', atoms%nat
+        do iat=1,atoms%nat
+            dipole(1)=dipole(1)+atoms%qat(iat)*atoms%ratp(1,iat)
+            dipole(2)=dipole(2)+atoms%qat(iat)*atoms%ratp(2,iat)
+            dipole(3)=dipole(3)+atoms%qat(iat)*atoms%ratp(3,iat)
+            write(7820,'(a3,3es16.8)') atoms%sat(iat),cte*atoms%ratp(1,iat),cte*atoms%ratp(2,iat),cte*atoms%ratp(3,iat)
+        enddo
+            write(7820,'(a11,3es16.8)')  'dpm(eAng): ',cte_2*dipole(1),cte_2*dipole(2),cte_2*dipole(3) 
+        !call yaml_mapping_open('cep',flow=.true.)
+        !call yaml_map('dpx',dipole(1),fmt='(f10.3)')
+        !call yaml_map('dpy',dipole(2),fmt='(f10.3)')
+        !call yaml_map('dpz',dipole(3),fmt='(f10.3)')
+        !call yaml_mapping_close()
+        close(7820)
+    endif
+    !--------------------------------------------------------------------------
     atoms%stress(1:3,1:3)=0.d0
     atoms%fat(1:3,1:atoms%nat)=0.d0
     if(trim(ann_arr%event)=='potential' .or. trim(ann_arr%event)=='evalu') then

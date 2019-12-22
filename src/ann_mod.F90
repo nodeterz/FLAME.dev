@@ -82,6 +82,7 @@ module mod_ann
     type, public:: typ_ann_arr
         logical:: exists_yaml_file = .false.
         integer:: iunit
+        integer:: istep_opt_ann=0
         integer:: nann=-1
         integer:: natmax=1000
         integer:: nweight_max=-1
