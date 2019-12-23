@@ -25,7 +25,6 @@ except IOError:
     sys.exit(0)
 
 atoms_all=[]
-conf_complete=False
 has_unit_cell=False
 iskip=0
 nat=0
@@ -33,6 +32,7 @@ ev2bohr=27.211385/0.52917721
 Ehar=27.211385 #eV
 ang2bohr=1.E0/0.529177210E0
 
+converged=False
 for iline,line in enumerate(lines):
     if iskip>0:
         iskip=-1
@@ -46,24 +46,13 @@ for iline,line in enumerate(lines):
     #looks for input geometry
     if 'Input geometry' in str_line:
         if 'Unit cell' in lines[iline+1]: has_unit_cell=True
-        #print str_line
         atoms=get_input_geometry(iline,lines,nat,has_unit_cell)
-        #rotation to lattice and all atom
-        ##if not atoms.boundcond=="free":
-        ##    atoms.cellvec,atoms.rat=latvec2dproj(atoms.cellvec,atoms.rat,atoms.nat)
-
-        #for iat in range(atoms.nat):
         iskip=6+nat
         continue
     #-------------------------------------------------------
     #looks for an updated geometry
     if 'Updated atomic structure' in str_line:
-        #print str_line
         atoms=get_updated_geometry(iline,lines,nat,has_unit_cell)
-        #rotation to lattice and all atom
-        ##if not atoms.boundcond=="free":
-        ##    atoms.cellvec,atoms.rat=latvec2dproj(atoms.cellvec,atoms.rat,atoms.nat)
-
         iskip=5+nat
         continue
     #-------------------------------------------------------
@@ -85,30 +74,29 @@ for iline,line in enumerate(lines):
         qtot = float(line.split()[2].rstrip(':'))
         continue
     #-------------------------------------------------------
-    if 'Total dipole moment [eAng]' in str_line:
-       atoms.dpm_present=True
-       atoms.dpm[0]=float(line.split()[6])*ang2bohr
-       atoms.dpm[1]=float(line.split()[7])*ang2bohr
-       atoms.dpm[2]=float(line.split()[8])*ang2bohr
+    if 'Self-consistency cycle converged.' in str_line: converged=True
+    if converged:
+        if 'Total dipole moment' in str_line:
+            atoms.dpm_present=True
+            atoms.dpm[0]=float(line.split()[6])*ang2bohr
+            atoms.dpm[1]=float(line.split()[7])*ang2bohr
+            atoms.dpm[2]=float(line.split()[8])*ang2bohr
     #-------------------------------------------------------
-    if 'Total atomic forces' in str_line:
-        #print atoms.sat[-1]
-        for iat in range(nat):
-            atoms.fat.append([])
-            atoms.fat[-1].append(float(lines[iline+1+iat].split()[2])/ev2bohr)
-            atoms.fat[-1].append(float(lines[iline+1+iat].split()[3])/ev2bohr)
-            atoms.fat[-1].append(float(lines[iline+1+iat].split()[4])/ev2bohr)
-        conf_complete=True
-        iskip=nat
-    #-------------------------------------------------------
-    if conf_complete:
-        atoms_all.append(Atoms())
-        atoms.qtot = qtot
-        atoms.units_length_io='angstrom'
-        atoms_all[-1]=copy.copy(atoms)
-        conf_complete=False
-        del atoms
-    #-------------------------------------------------------
+    if converged:
+        if 'Total atomic forces' in str_line:
+            for iat in range(nat):
+                atoms.fat.append([])
+                atoms.fat[-1].append(float(lines[iline+1+iat].split()[2])/ev2bohr)
+                atoms.fat[-1].append(float(lines[iline+1+iat].split()[3])/ev2bohr)
+                atoms.fat[-1].append(float(lines[iline+1+iat].split()[4])/ev2bohr)
+            iskip=nat
+#-------------------------------------------------------
+atoms_all.append(Atoms())
+atoms.qtot = qtot
+atoms.units_length_io='angstrom'
+atoms_all[-1]=copy.copy(atoms)
+del atoms
+#-------------------------------------------------------
 #End of reading from input file.
 #-----------------------------------------------------------------------------------------
 for atoms in atoms_all:
