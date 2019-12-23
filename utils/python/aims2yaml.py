@@ -31,6 +31,7 @@ iskip=0
 nat=0
 ev2bohr=27.211385/0.52917721
 Ehar=27.211385 #eV
+ang2bohr=1.E0/0.529177210E0
 
 for iline,line in enumerate(lines):
     if iskip>0:
@@ -86,9 +87,9 @@ for iline,line in enumerate(lines):
     #-------------------------------------------------------
     if 'Total dipole moment [eAng]' in str_line:
        atoms.dpm_present=True
-       atoms.dpm[0]=float(line.split()[6])
-       atoms.dpm[1]=float(line.split()[7])
-       atoms.dpm[2]=float(line.split()[8])
+       atoms.dpm[0]=float(line.split()[6])*ang2bohr
+       atoms.dpm[1]=float(line.split()[7])*ang2bohr
+       atoms.dpm[2]=float(line.split()[8])*ang2bohr
     #-------------------------------------------------------
     if 'Total atomic forces' in str_line:
         #print atoms.sat[-1]
