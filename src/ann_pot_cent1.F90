@@ -96,7 +96,11 @@ subroutine cal_ann_cent1(parini,atoms,symfunc,ann_arr)
             dipole(3)=dipole(3)+atoms%qat(iat)*atoms%ratp(3,iat)
             write(7820,'(a3,3es16.8)') atoms%sat(iat),cte*atoms%ratp(1,iat),cte*atoms%ratp(2,iat),cte*atoms%ratp(3,iat)
         enddo
-            write(7820,'(a11,3es16.8)')  'dpm(eAng): ',cte_2*dipole(1),cte_2*dipole(2),cte_2*dipole(3) 
+        write(7820,'(a11,3es16.8)')  'dpm(cent): ',dipole(1),dipole(2),dipole(3) 
+        write(7820,'(a11,3es16.8)')  'dpm(org): ',atoms%dpm(1),atoms%dpm(2),atoms%dpm(3)
+        write(7820,'(a11,3es16.8)')  'dpm(err): ',atoms%dpm(1)-dipole(1),atoms%dpm(2)-dipole(2),atoms%dpm(3)-dipole(3)
+        write(7820,'(a11,3es16.8)')  'dpm(rmse):',&
+            sqrt((atoms%dpm(1)-dipole(1))**2+(atoms%dpm(2)-dipole(2))**2+(atoms%dpm(3)-dipole(3))**2)
         !call yaml_mapping_open('cep',flow=.true.)
         !call yaml_map('dpx',dipole(1),fmt='(f10.3)')
         !call yaml_map('dpy',dipole(2),fmt='(f10.3)')
