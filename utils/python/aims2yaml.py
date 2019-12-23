@@ -84,6 +84,12 @@ for iline,line in enumerate(lines):
         qtot = float(line.split()[2].rstrip(':'))
         continue
     #-------------------------------------------------------
+    if 'Total dipole moment [eAng]' in str_line:
+       atoms.dpm_present=True
+       atoms.dpm[0]=float(line.split()[6])
+       atoms.dpm[1]=float(line.split()[7])
+       atoms.dpm[2]=float(line.split()[8])
+    #-------------------------------------------------------
     if 'Total atomic forces' in str_line:
         #print atoms.sat[-1]
         for iat in range(nat):
