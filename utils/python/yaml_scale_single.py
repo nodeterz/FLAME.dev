@@ -2,6 +2,7 @@
 import argparse
 import atoms
 import copy
+from random import randrange
 from io_yaml import *
 
 str1 = "This script reads a file in the yaml dictionary format and scales it based on given scale factor."
@@ -19,6 +20,9 @@ atoms_all_out=[]
 #print atoms_all[0].rat[0][0]
 
 for iconf in range(len(atoms_all)):
+#    scale=((-1)**iconf)*randrange(1,9)/100.0
+#    scale=1.0+scale
+#    print scale
     atoms=Atoms()
     atoms=copy.deepcopy(atoms_all[iconf])
     atoms.cellvec[0][0]=atoms_all[iconf].cellvec[0][0]*scale
