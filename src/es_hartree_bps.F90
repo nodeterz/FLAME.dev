@@ -13,7 +13,7 @@ subroutine get_psolver_bps(poisson,atoms,ehartree)
     !local variables
     integer:: igpx, igpy, igpz
 #if defined(HAVE_BPS)
-    real(8), allocatable:: pot_ion(:)
+    real(8), allocatable:: pot_ion(:),pot_scn(:,:,:)
     real(8):: stress_t(6)
     !type(coulomb_operator):: pkernel
     if(trim(atoms%boundcond)/='bulk' .and. trim(atoms%boundcond)/='free') then
@@ -29,8 +29,46 @@ subroutine get_psolver_bps(poisson,atoms,ehartree)
     !however, I can check or make it to be allocated as (ngpx,ngpy,ngpz), if
     !BPS is used.
     !stress_t(1:6)=0.d0
-    call H_POTENTIAL('G',poisson%pkernel,poisson%rho, &
+    do igpz=1,poisson%ngpz
+    do igpy=1,poisson%ngpy
+    do igpx=1,poisson%ngpx
+        poisson%pot(igpx,igpy,igpz)=poisson%rho(igpx,igpy,igpz)
+    enddo
+    enddo
+    enddo
+        ehartree=0.d0
+    call H_POTENTIAL('G',poisson%pkernel,poisson%pot, &
         pot_ion,ehartree,0.d0,.false.,stress_tensor=stress_t) !,quiet='yes')
+    if (poisson%cal_scn) then
+        allocate(pot_scn(poisson%ngpx,poisson%ngpy,poisson%ngpz))
+        do igpz=1,poisson%ngpz
+        do igpy=1,poisson%ngpy
+        do igpx=1,poisson%ngpx
+            pot_scn(igpx,igpy,igpz)=poisson%rho(igpx,igpy,igpz)
+        enddo
+        enddo
+        enddo
+        ehartree=0.d0
+        !call H_POTENTIAL('G',poisson%pkernel_scn,pot_scn, &
+        !    pot_ion,ehartree,0.d0,.false.,stress_tensor=stress_t) !,quiet='yes')
+        !call get_psolver_kspace_gaussscreening(poisson%ngpx,poisson%ngpy,poisson%ngpz, &
+        !    poisson%hgrid,poisson%rho,poisson%screening_factor,pot_scn)
+        call get_psolver_kspace_exprnscreening(poisson%ngpx,poisson%ngpy,poisson%ngpz, &
+            poisson%hgrid,poisson%rho,poisson%screening_factor,4,pot_scn)
+        ehartree=0.d0
+        do igpz=1,poisson%ngpz
+        do igpy=1,poisson%ngpy
+        do igpx=1,poisson%ngpx
+            poisson%pot(igpx,igpy,igpz)=poisson%pot(igpx,igpy,igpz)-pot_scn(igpx,igpy,igpz)
+            ehartree=ehartree+poisson%rho(igpx,igpy,igpz)*poisson%pot(igpx,igpy,igpz)
+        enddo
+        enddo
+        enddo
+        ehartree=ehartree*(poisson%hgrid(1,1)*poisson%hgrid(2,2)*poisson%hgrid(3,3))*0.5d0
+        deallocate(pot_scn)
+
+    endif
+
     !write(*,'(a,6es14.5)') 'STRESS ',stress_t(1:6)
     !ordering from BigDFT ---> (11,22,33,23,13,12)
     atoms%stress(1,1)=stress_t(1)
@@ -42,13 +80,6 @@ subroutine get_psolver_bps(poisson,atoms,ehartree)
     atoms%stress(3,2)=stress_t(4)
     atoms%stress(3,1)=stress_t(5)
     atoms%stress(2,1)=stress_t(6)
-    do igpz=1,poisson%ngpz
-    do igpy=1,poisson%ngpy
-    do igpx=1,poisson%ngpx
-        poisson%pot(igpx,igpy,igpz)=poisson%rho(igpx,igpy,igpz)
-    enddo
-    enddo
-    enddo
     call f_free(pot_ion)
 #else
     stop 'ERROR: Alborz is not linked with Poisson solvers in BigDFT.'
@@ -65,6 +96,7 @@ subroutine init_psolver_bps(parini,atoms,poisson)
     !use wrapper_mpi, only: mpi_environment, MPI_COMM_WORLD
 #if defined(HAVE_BPS)
     use Poisson_Solver, only: pkernel_init, pkernel_set
+    use at_domain, only: domain, domain_new, ATOMIC_UNITS, geocode_to_bc_enum
 #endif
     implicit none
     type(typ_parini), intent(in):: parini
@@ -80,9 +112,10 @@ subroutine init_psolver_bps(parini,atoms,poisson)
     type(dictionary), pointer :: dict_input=>null()
     !type(mpi_environment):: bigdft_mpi
 #if defined(HAVE_BPS)
-    write(*,*) 'REZA-1'
+    type(domain) :: dom
+    !write(*,*) 'REZA-1'
     !call f_lib_initialize() 
-    write(*,*) 'REZA-2'
+    !write(*,*) 'REZA-2'
     !bigdft_mpi%mpi_comm=MPI_COMM_WORLD !workaround to be removed
     nxyz=(/64,64,64/)
     if(trim(atoms%boundcond)=='bulk') then
@@ -117,7 +150,7 @@ subroutine init_psolver_bps(parini,atoms,poisson)
     ang_ac=acos(dot_product(cv1,cv3)/sqrt(dot_product(cv1,cv1)*dot_product(cv3,cv3)))
     ang_ab=acos(dot_product(cv1,cv2)/sqrt(dot_product(cv1,cv1)*dot_product(cv2,cv2)))
     !write(*,'(a,3f15.5)') 'alpha,beta,gamma ',ang_bc,ang_ac,ang_ab
-    write(*,*) 'REZA-3'
+    !write(*,*) 'REZA-3'
     write(*,*) 'iproc,nproc', iproc, nproc
     write(*,*) 'geocode : ',geocode
     dict_input=>dict_new('kernel' .is. dict_new('isf_order' .is. itype_scf))
@@ -125,11 +158,23 @@ subroutine init_psolver_bps(parini,atoms,poisson)
     beta_ac = abs(ang_ac)!+pi/2.d0
     gamma_ab = abs(ang_ab)!+pi/2.d0
     !write(*,*) iproc,nproc,geocode,ndims, hgrids,alpha_bc,beta_ac,gamma_ab
-    poisson%pkernel=pkernel_init(iproc,nproc,dict_input,geocode,ndims,hgrids,alpha_bc,beta_ac,gamma_ab)
+    dom=domain_new(units=ATOMIC_UNITS,bc=geocode_to_bc_enum(geocode), &
+                    alpha_bc=alpha_bc,beta_ac=beta_ac,gamma_ab=gamma_ab,acell=ndims*hgrids)
+    poisson%pkernel=pkernel_init(iproc,nproc,dict_input,dom,ndims,hgrids,alpha_bc,beta_ac,gamma_ab)
+    if(poisson%cal_scn) then
+        poisson%pkernel_scn%mu=poisson%screening_factor
+        poisson%pkernel_scn=pkernel_init(iproc,nproc,dict_input,dom,ndims,hgrids,alpha_bc,beta_ac,gamma_ab)
+    endif
     call dict_free(dict_input)
-    write(*,*) 'REZA-4'
+    !write(*,*) 'REZA-4'
+    !poisson%pkernel%mu=poisson%screening_factor
     call pkernel_set(poisson%pkernel,verbose=.true.)
-    write(*,*) 'REZA-5'
+    if(poisson%cal_scn) then
+        !write(*,*) 'SCN = ' , poisson%screening_factor
+        poisson%pkernel_scn%mu=poisson%screening_factor
+        call pkernel_set(poisson%pkernel_scn,verbose=.true.)
+    endif
+    !write(*,*) 'REZA-5'
     !write(*,'(a,2es20.12)') 'Hartree ',ehartree,ehartree-ehartree_ref
 #else
     stop 'ERROR: Alborz is not linked with Poisson solvers in BigDFT.'
@@ -146,6 +191,7 @@ subroutine fini_psolver_bps(poisson)
     type(typ_poisson), intent(inout):: poisson
 #if defined(HAVE_BPS)
     call pkernel_free(poisson%pkernel)
+    if (poisson%cal_scn) call pkernel_free(poisson%pkernel_scn)
     !call f_lib_finalize()
 #else
     stop 'ERROR: Alborz is not linked with Poisson solvers in BigDFT.'

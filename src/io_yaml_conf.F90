@@ -21,13 +21,15 @@ subroutine read_yaml_conf(parini,filename,nconfmax,atoms_arr)
     type(typ_atoms_arr), intent(inout):: atoms_arr
     !local variables
     integer:: ios, iconf, i, nconf, iat, k, nat, ii, ndigit, iiconf
+    integer:: ntrial,kat,trial_kat
     character(256):: str, fn_tmp
     character(256):: fn_fullpath
     character(3):: str_motion
     character(8):: str_fmt
     character(50):: str_conf
     character(10):: str_units_length
-    real(8):: t1, t2, t3, x, y, z, cf_length, fx, fy, fz
+    real(8):: t1, t2, t3, x, y, z, cf_length, fx, fy, fz 
+    real(8):: trial_energy,trial_x,trial_y,trial_z
     real(8):: cvax, cvay, cvaz
     real(8):: cvbx, cvby, cvbz
     real(8):: cvcx, cvcy, cvcz
@@ -65,7 +67,12 @@ subroutine read_yaml_conf(parini,filename,nconfmax,atoms_arr)
         iiconf=iconf-1
         dict1=>confs_list//iiconf//'conf'
         nat=dict1//'nat'
-        call atom_allocate(atoms_arr%atoms(iconf),nat,0,0)
+        if(has_key(dict1,"ntrial")) then
+            ntrial=dict1//'ntrial'
+            call atom_allocate(atoms_arr%atoms(iconf),nat,0,0,ntrial=ntrial)
+        else
+            call atom_allocate(atoms_arr%atoms(iconf),nat,0,0)
+        endif
         atoms_arr%atoms(iconf)%boundcond=dict1//'bc'
         cf_length=1.d0
         if(has_key(dict1,"units_length")) then
@@ -154,6 +161,23 @@ subroutine read_yaml_conf(parini,filename,nconfmax,atoms_arr)
                 nullify(dict2)
             enddo
         endif
+        if(has_key(dict1,"trial_ref_energy")) then
+            do kat=1,ntrial
+                ii=kat-1
+                dict2=>dict1//'trial_ref_energy'//ii
+                trial_kat=dict2//0
+                trial_x=dict2//1
+                trial_y=dict2//2
+                trial_z=dict2//3
+                trial_energy=dict2//4
+                atoms_arr%atoms(iconf)%trial_ref_nat(kat)=trial_kat
+                atoms_arr%atoms(iconf)%trial_ref_disp(1,kat)=trial_x
+                atoms_arr%atoms(iconf)%trial_ref_disp(2,kat)=trial_y
+                atoms_arr%atoms(iconf)%trial_ref_disp(3,kat)=trial_z
+                atoms_arr%atoms(iconf)%trial_ref_energy(kat)=trial_energy
+                nullify(dict2)
+            enddo
+        endif
         nullify(dict1)
     enddo
 
@@ -181,6 +205,7 @@ subroutine write_yaml_conf(file_info,atoms,strkey)
     character(*), optional, intent(in):: strkey
     !local variables
     integer:: ios, iconf, i, nconf, iat, k, nat, ii, iunit, ierr
+    character(256):: str_msg
     character(256):: fn_tmp
     character(256):: fn_fullpath
     character(3):: str_motion
@@ -195,6 +220,7 @@ subroutine write_yaml_conf(file_info,atoms,strkey)
     type(dictionary), pointer :: coord_list=>null()
     type(dictionary), pointer :: conf_dict=>null()
     type(dictionary), pointer :: force_list=>null()
+    type(dictionary), pointer :: stress_list=>null()
     real(8), allocatable:: rat(:,:)
     allocate(rat(3,atoms%nat))
 
@@ -229,6 +255,7 @@ subroutine write_yaml_conf(file_info,atoms,strkey)
         call set(conf_dict//'qtot',atoms%qtot)
     endif
     call set(conf_dict//'epot',atoms%epot)
+    call set(conf_dict//'dpm',(/atoms%dpm(1),atoms%dpm(2),atoms%dpm(3)/))
     call set(conf_dict//'coord',list_new(.item. "it will be overwritten"))
     coord_list=>conf_dict//'coord'
     call get_rat(atoms,rat)
@@ -260,6 +287,19 @@ subroutine write_yaml_conf(file_info,atoms,strkey)
             nullify(single_atom_list)
         enddo
         nullify(force_list)
+        if(trim(atoms%boundcond)=='bulk') then
+            stress_list=>conf_dict//'stress'
+            call set(stress_list,(/atoms%stress(1,1), &
+                                   atoms%stress(2,1), &
+                                   atoms%stress(3,1), &
+                                   atoms%stress(1,2), &
+                                   atoms%stress(2,2), &
+                                   atoms%stress(3,2), &
+                                   atoms%stress(1,3), &
+                                   atoms%stress(2,3), &
+                                   atoms%stress(3,3)/))
+            nullify(stress_list)
+        endif
     endif
 
     iunit=f_get_free_unit(10**5)
@@ -272,8 +312,9 @@ subroutine write_yaml_conf(file_info,atoms,strkey)
              record_length=92,istat=ierr,setdefault=.false.,tabbing=0,position='append')
     endif
     if(ierr/=0) then
-       call yaml_warning('Failed to create'//trim(file_info%filename_positions)//', &
-           error code='//trim(yaml_toa(ierr)))
+        str_msg='Failed to create'//trim(file_info%filename_positions)
+        str_msg=trim(str_msg)//'error code='//trim(yaml_toa(ierr))
+       call yaml_warning(trim(str_msg))
     end if
     call yaml_release_document(unit=iunit)
     call yaml_new_document(unit=iunit)

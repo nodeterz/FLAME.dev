@@ -3,7 +3,6 @@ subroutine init_potential_ann(parini,atoms)
     use mod_parini, only: typ_parini
     use mod_atoms, only: typ_atoms
     use mod_potential, only: ann_arr, ann_boundcheck
-    use mod_ann, only: set_number_of_ann
     use yaml_output
     implicit none
     type(typ_parini), intent(in):: parini
@@ -16,7 +15,11 @@ subroutine init_potential_ann(parini,atoms)
     !call count_words(parini%stypat_ann,ann_arr%nann)
     ann_arr%approach=trim(parini%approach_ann)
     !write (*,*) 'parini         ', ann_arr%approach
-    call set_number_of_ann(parini,ann_arr)
+    if(parini%bondbased_ann) then
+        call ann_arr%set_number_of_ann(4)
+    else
+        call ann_arr%set_number_of_ann(parini%ntypat)
+    endif
     if(ann_arr%nann==0) stop 'ERROR: number of type of atoms zero in init_potential_ann'
     call yaml_map('number of ANN',ann_arr%nann)
     !write(*,*) 'ann_arr%nann= ',ann_arr%nann
@@ -57,7 +60,7 @@ end subroutine init_potential_ann
 subroutine cal_potential_ann(parini,atoms)
     use mod_parini, only: typ_parini
     use mod_atoms, only: typ_atoms, atom_deallocate_old, get_rat
-    use mod_potential, only: ann_arr, fcalls, fcalls_sec, potential, potential_sec, ann_boundcheck
+    use mod_potential, only: ann_arr, fcalls, fcalls_sec, potcode, potential_sec, ann_boundcheck
     use mod_symfunc, only: typ_symfunc
     use mod_opt_ann, only: typ_opt_ann
     implicit none
@@ -68,7 +71,7 @@ subroutine cal_potential_ann(parini,atoms)
     real(8):: epoti, fcalls_t
     type(typ_symfunc):: symfunc
     type(typ_opt_ann):: opt_ann
-    if(trim(potential)=='ann') then
+    if(trim(potcode)=='ann') then
         fcalls_t=fcalls
     elseif(trim(potential_sec)=='ann') then
         fcalls_t=fcalls_sec
@@ -94,6 +97,12 @@ subroutine cal_potential_ann(parini,atoms)
     if(trim(ann_arr%event)/='potential') then
         write(*,*) 'ERROR: ann_arr%event different from potential'
         stop
+    endif
+    if(trim(ann_arr%approach)=='cent2') then
+            if (allocated(ann_arr%a)) deallocate(ann_arr%a)
+            allocate(ann_arr%a(1:(atoms%nat+1)*(atoms%nat+1)))
+            ann_arr%amat_initiated=.false.
+            ann_arr%a=0.d0
     endif
     call cal_ann_main(parini,atoms,symfunc,ann_arr,opt_ann)
 !    do iat=1,atoms%nat
@@ -150,6 +159,7 @@ subroutine add_repulsive_potential(parini,atoms)
     rcmax=2.d0*rcovmax
     call linkedlists_init(parini,atoms,cell,linked_lists)
     frac1=0.72d0
+    !frac1=0.80d0 !SAMARE
     frac12=frac1**12
     !-------------------------------------------------------
     epot_rep=0.d0
@@ -173,9 +183,13 @@ subroutine add_repulsive_potential(parini,atoms)
             rsq= dx*dx+dy*dy+dz*dz
             maincell=maincell_iat+linked_lists%maincell(jat)
             rc=(atoms%rcov(iatp)+atoms%rcov(linked_lists%perm(jat)))*0.7d0
+!            if (trim(atoms%sat(iatp))=='O' .and.  trim(atoms%sat(linked_lists%perm(jat)))=='O')then
+!                rc=4.40 !SAMARE
+!            endif
             rcsq=rc**2
             if(rsq<rcsq .and. maincell >-1) then
                 r=sqrt(rsq)
+                !write(*,'(2a3,2f8.3)') trim(atoms%sat(iatp)),trim(atoms%sat(linked_lists%perm(jat))),r,rc
                 !---------------------------------
                 !c=0.1d0
                 !b=-2.d0*c/rc

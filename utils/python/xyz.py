@@ -15,9 +15,9 @@ def xyz_read(filename,style):
         if iline==1:
             atoms.nat=int(line.split()[0])
             units=line.split()[1]
-            atoms.epot=float(line.split()[2])
+            #atoms.epot=float(line.split()[2])
             #if units=='atomicd0' or units=='atomic':
-            atoms.epot=atoms.epot*27.211385 #in bigdft energy is in Ha disregarding units of position
+            #atoms.epot=atoms.epot*27.211385 #in bigdft energy is in Ha disregarding units of position
         if iline==2:
             if style=='mine':
                 atoms.boundcond=line.split()[0]
@@ -71,16 +71,16 @@ def xyz_write(atoms_all,frmt):
         else:
             first="%d" % atoms.nat
             second=''
-        print first
-        print second
+        print(first)
+        print(second)
         for i in range(atoms.nat):
             x=atoms.rat[i][0]
             y=atoms.rat[i][1]
             z=atoms.rat[i][2]
             if frmt=='bigdft':
-                print "%5s  %23.14E%23.14E%23.14E" % (atoms.sat[i],x,y,z)
+                print("%5s  %23.14E%23.14E%23.14E" % (atoms.sat[i],x,y,z))
             else:
-                print "%5s  %23.14E%23.14E%23.14E%5s" % (atoms.sat[i],x,y,z,atoms.bemoved[i])
+                print("%5s  %23.14E%23.14E%23.14E%5s" % (atoms.sat[i],x,y,z,atoms.bemoved[i]))
 #*****************************************************************************************
 def xyz_write_b(atoms_all,frmt,filename):
     f= open(filename,"w")
@@ -93,14 +93,14 @@ def xyz_write_b(atoms_all,frmt,filename):
         else:
             first="%d" % atoms.nat
             second=''
-        f.write("%s \n" % (first))
-        f.write("%s \n" % (second))
+        f.write("%s\n" % (first))
+        f.write("%s\n" % (second))
         for i in range(atoms.nat):
             x=atoms.rat[i][0]
             y=atoms.rat[i][1]
             z=atoms.rat[i][2]
             if frmt=='bigdft':
-                f.write("%5s  %23.14E%23.14E%23.14E \n" % (atoms.sat[i],x,y,z))
+                f.write("%5s  %23.14E%23.14E%23.14E\n" % (atoms.sat[i],x,y,z))
             else:
                 f.write("%5s  %23.14E%23.14E%23.14E%5s\n" % (atoms.sat[i],x,y,z,atoms.bemoved[i]))
 #*****************************************************************************************

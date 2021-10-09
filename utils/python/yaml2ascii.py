@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import sys
 import argparse
 import atoms
 from latvec2dproj import *
@@ -36,8 +37,11 @@ if len(atoms_all)==1:
         atoms_all[0].cellvec,atoms_all[0].rat=latvec2dproj(atoms_all[0].cellvec,atoms_all[0].rat,atoms_all[0].nat)
     ascii_write(atoms_all[0],args.fn_out)
 else:
-    print "\nATTENTION: The are more than one configuration in YAML file. The given name for the output is ignored!"
-    prefix=raw_input("Please provide a prefix to generate files enumeratedly: [Default=tt]")
+    print("\nATTENTION: The are more than one configuration in YAML file. The given name for the output is ignored!")
+    if sys.version_info.major < 3:
+        prefix=raw_input("Please provide a prefix to generate files enumeratedly: [Default=tt]")
+    else:
+        prefix=input("Please provide a prefix to generate files enumeratedly: [Default=tt]")
     if prefix=="": prefix="tt"
     nconf=0
     for atoms in atoms_all:

@@ -4,7 +4,7 @@ subroutine ann_check_symmetry_function(parini)
     use mod_ann, only: typ_ann_arr
     use mod_symfunc, only: typ_symfunc, typ_symfunc_arr
     use mod_atoms, only: typ_atoms_arr
-    use mod_processors, only: iproc, mpi_comm_abz
+    use mod_processors, only: iproc
     use dynamic_memory
     implicit none
     type(typ_parini), intent(in):: parini
@@ -97,7 +97,7 @@ subroutine ann_check_symmetry_function(parini)
 !-----------------Compute symmetry functions with/without normalization-------------------------
     if(parini%normalization_ann) then
         configurations: do iconf=1,atoms_check%nconf
-            call symmetry_functions(parini,ann_arr,atoms_check%atoms(iconf),symfunc,.false.)
+            call symfunc%get_symfunc(parini,ann_arr,atoms_check%atoms(iconf),.false.)
             if(parini%symfunc_type_ann=='behler') then
                 deallocate(symfunc%linked_lists%prime_bound)
                 deallocate(symfunc%linked_lists%bound_rad)
@@ -144,7 +144,7 @@ subroutine ann_check_symmetry_function(parini)
         enddo
     else
         do iconf=1,atoms_check%nconf
-            call symmetry_functions(parini,ann_arr,atoms_check%atoms(iconf),symfunc,.false.)
+            call symfunc%get_symfunc(parini,ann_arr,atoms_check%atoms(iconf),.false.)
             do iat=1,atoms_check%atoms(iconf)%nat
                 do ig=1,symfunc_check%symfunc(iconf)%ng
                     symfunc_check%symfunc(iconf)%y(ig,iat)=symfunc%y(ig,iat)
